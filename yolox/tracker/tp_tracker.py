@@ -133,8 +133,6 @@ class STrack(BaseTrack):
         
         if not new_track.occluded:
             self.tlwh_queue.add(self._tlwh)
-        # else:
-        #     print("겹처서 업데이트안됨")
 
     @property
     # @jit(nopython=True)
@@ -142,13 +140,7 @@ class STrack(BaseTrack):
         """Get current position in bounding box format `(top left x, top left y,
                 width, height)`.
         """
-
-        # if self.mean is None:
         return self._tlwh.copy()
-        # ret = self.mean[:4].copy()
-        # ret[2] *= ret[3]
-        # ret[:2] -= ret[2:] / 2
-        # return ret
 
     @property
     # @jit(nopython=True)
@@ -341,8 +333,6 @@ class TPTracker(object):
 
         ''' Step 2: First association, with high score detection boxes'''
         strack_pool = joint_stracks(tracked_stracks, self.lost_stracks)
-        # if len(strack_pool)>0:
-        #     print("예측전 : ", strack_pool[0].mean)
         
         # Predict the current location with KF
         # STrack.multi_predict(strack_pool)
@@ -358,15 +348,9 @@ class TPTracker(object):
         
         ##########################################
         
-        
-        # if len(strack_pool)>0:
-        #     print("예측후 : ", strack_pool[0].mean)
-        
         dists = matching.iou_distance(strack_pool, detections)
         # if not self.args.mot20:
-        dists = matching.fuse_score(dists, detections) # 감지 스코어 곱함
-        
-        # matches1, u_track1, u_detection1 = matching.linear_assignment(dists, thresh=self.args.match_thresh)
+        dists = matching.fuse_score(dists, detections)
         
         matches, u_track, u_detection = matching.linear_assignment_hungarian(dists, thresh=self.args.match_thresh)
         

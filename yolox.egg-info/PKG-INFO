@@ -1,0 +1,11 @@
+Metadata-Version: 2.1
+Name: yolox
+Version: 0.1.0
+Author: basedet team
+Classifier: Programming Language :: Python :: 3
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.6
+License-File: LICENSE
+
+# SCIT-MCMT-Tracking
+Repo for the paper "Leveraging Future Trajectory Prediction for Multi-Camera People Tracking" (CVPRW 2023)

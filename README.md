@@ -1,4 +1,4 @@
-# [CVPRW2023] Leveraging Future Trajectory Prediction for Multi-Camera People Tracking
+# [CVPRW2023] "Leveraging Future Trajectory Prediction for Multi-Camera People Tracking"
 
 [Track1: Multi-Camera People Tracking](https://www.aicitychallenge.org/2023-challenge-tracks/)
 

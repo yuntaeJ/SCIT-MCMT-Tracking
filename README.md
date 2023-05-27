@@ -10,9 +10,36 @@ The official resitory for [7th NVIDIA AI City Challenge](https://www.aicitychall
 
 ## Environment
 
+We run on 2 NVIDIA A6000 GPUs.
+
+- Linux or macOS
+- Python 3.7+  (Python 3.8 in our envs)
+- PyTorch 1.9+ (1.11.0 in our envs)
+- CUDA 10.2+ (CUDA 11.3 in our envs)
+- mmcv-full==1.7.1 ([MMCV](https://mmcv.readthedocs.io/en/latest/#installation))
+
+## Installation
+
+- Create an anaconda environment.
+
+```bash 
+sh setup.sh
+```
 ## Train
 
 ## Inference
+
+- Step #1. Single-Camera Tracking.
+
+```bash 
+sh run.sh
+```
+
+- Step #1. Multi-Camera Tracking (Association).
+```bash 
+sh run.sh
+```
+
 
 ## Citation
 ```

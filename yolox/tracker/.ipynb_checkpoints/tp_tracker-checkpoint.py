@@ -133,8 +133,6 @@ class STrack(BaseTrack):
         
         if not new_track.occluded:
             self.tlwh_queue.add(self._tlwh)
-        # else:
-        #     print("겹처서 업데이트안됨")
 
     @property
     # @jit(nopython=True)
@@ -142,13 +140,7 @@ class STrack(BaseTrack):
         """Get current position in bounding box format `(top left x, top left y,
                 width, height)`.
         """
-
-        # if self.mean is None:
         return self._tlwh.copy()
-        # ret = self.mean[:4].copy()
-        # ret[2] *= ret[3]
-        # ret[:2] -= ret[2:] / 2
-        # return ret
 
     @property
     # @jit(nopython=True)
@@ -237,46 +229,56 @@ class TPTracker(object):
         # create the tensor
         obs_traj = torch.tensor(obj_traj_temp).unsqueeze(0)
         V_obs = calculate_v_obs(obs_traj)
-
+        
         obs_traj = torch.tensor(obs_traj, device='cuda:0', dtype=torch.float64)
         V_obs = torch.tensor(V_obs, device='cuda:0', dtype=torch.float64)
         
         V_obs_tmp = V_obs.permute(0, 3, 1, 2)
-        V_x = seq_to_nodes(obs_traj.data.cpu().numpy())
         V_predx = self.tp_model(V_obs_tmp, obs_traj, KSTEPS=KSTEPS)
+        V_x = seq_to_nodes(obs_traj.data.cpu().numpy())
         
+        num_of_objs = V_obs.shape[-2]
         pred_result = []
         for k in range(KSTEPS):
             V_pred = V_predx[k:k + 1, ...]
+            
             V_pred = V_pred.permute(0, 2, 3, 1)
-            V_pred = V_pred.squeeze()
+            V_pred = V_pred[0]
+            final_V_pred = V_pred.data.cpu().numpy()
             V_pred_rel_to_abs = nodes_rel_to_nodes_abs(
-                V_pred.data.cpu().numpy().squeeze(), V_x[-1, :, :].copy())
+                final_V_pred, V_x[-1, :, :].copy())
 
-        for n in range(len(pred_index)):
-            pred_result.append(V_pred_rel_to_abs[:, n:n + 1, :])
+            for n in range(num_of_objs):
+                pred_result.append(V_pred_rel_to_abs[:, n:n + 1, :])
+        
+        pred_result_final = []
+        for n in range(num_of_objs):
+            pred_result_final.append(pred_result[n])
         
         for i in range(len(pred_index)):
-            strack_pool[pred_index[i]].pred_traj =  [coord[0] for coord in pred_result[i]]
-            
+            strack_pool[pred_index[i]].pred_traj =  [coord[0] for coord in pred_result_final[i]]
+                  
         return strack_pool
         
         
     def process_occlusion(self, strack_pool, occluded_val_list):
         pred_index = []
         for i in range(len(strack_pool)):
-            if strack_pool[i].overlap_len == 0 and occluded_val_list[i] == True: # occlusion start
+            if strack_pool[i].overlap_len == 0 and occluded_val_list[i] == True:
                 if strack_pool[i].tlwh_queue.length() == self.obs_seq_len*self.frames_per_set:   
                     strack_pool[i].overlap_len += 1
                     pred_index.append(i)
                 
-            elif strack_pool[i].overlap_len != 0 and occluded_val_list[i] == True: # occlusion continue
+            elif strack_pool[i].overlap_len != 0 and occluded_val_list[i] == True:
                 strack_pool[i].overlap_len += 1
                 
-            elif strack_pool[i].overlap_len != 0 and occluded_val_list[i] == False: # occlusion end
-                if len(strack_pool[i].pred_traj) > 0: # pred 결과 읽어서 tlwh 업데이트
+            elif strack_pool[i].overlap_len != 0 and occluded_val_list[i] == False:
+                if len(strack_pool[i].pred_traj) > 0:
                     pred_traj_index = (strack_pool[i].overlap_len)//self.frames_per_set
-                
+                    
+                    if pred_traj_index >= len(strack_pool[i].pred_traj):
+                        pred_traj_index = len(strack_pool[i].pred_traj) - 1
+                    
                     c_x, b_y = strack_pool[i].pred_traj[pred_traj_index]
                     _,_,w,h = strack_pool[i].last_tlbr
 
@@ -298,7 +300,7 @@ class TPTracker(object):
         refind_stracks = []
         lost_stracks = []
         removed_stracks = []
-
+        
         if len(output_results):
             scores = output_results[:, 4]
             bboxes = output_results[:, :4]  # x1y1x2y2
@@ -341,8 +343,6 @@ class TPTracker(object):
 
         ''' Step 2: First association, with high score detection boxes'''
         strack_pool = joint_stracks(tracked_stracks, self.lost_stracks)
-        # if len(strack_pool)>0:
-        #     print("예측전 : ", strack_pool[0].mean)
         
         # Predict the current location with KF
         # STrack.multi_predict(strack_pool)
@@ -352,31 +352,25 @@ class TPTracker(object):
         # check occlusion in strack_pool
         detections_tlbr = [STrack.tlwh_to_tlbr(s._tlwh) for s in strack_pool]
         occluded_val_list = check_occlusion(detections_tlbr)
-        
+
         # Process occlusion
         strack_pool = self.process_occlusion(strack_pool, occluded_val_list) # process about strack_pool's _tlwh
         
         ##########################################
         
-        
-        # if len(strack_pool)>0:
-        #     print("예측후 : ", strack_pool[0].mean)
-        
         dists = matching.iou_distance(strack_pool, detections)
         # if not self.args.mot20:
-        dists = matching.fuse_score(dists, detections) # 감지 스코어 곱함
-        
-        # matches1, u_track1, u_detection1 = matching.linear_assignment(dists, thresh=self.args.match_thresh)
+        dists = matching.fuse_score(dists, detections)
         
         matches, u_track, u_detection = matching.linear_assignment_hungarian(dists, thresh=self.args.match_thresh)
         
         for itracked, idet in matches:
             track = strack_pool[itracked]
             det = detections[idet]
-            if track.state == TrackState.Tracked: # 이어서 트래킹
+            if track.state == TrackState.Tracked:
                 track.update(detections[idet], self.frame_id)
                 activated_starcks.append(track)
-            else: # 잃어버린것 중 트래킹
+            else:
                 track.re_activate(det, self.frame_id, new_id=False)
                 refind_stracks.append(track)
 
@@ -435,8 +429,6 @@ class TPTracker(object):
             if self.frame_id - track.end_frame > self.max_time_lost:
                 track.mark_removed()
                 removed_stracks.append(track)
-
-        # print('Ramained match {} s'.format(t4-t3))
 
         self.tracked_stracks = [t for t in self.tracked_stracks if t.state == TrackState.Tracked]
         self.tracked_stracks = joint_stracks(self.tracked_stracks, activated_starcks)
@@ -527,7 +519,7 @@ def check_occlusion(detections_tlbr):
 
         occluded_val_list = []
         for iou_row in ious:
-            if sum(iou_row)>1.2:
+            if sum(iou_row)>1.33:
                 occluded_val_list.append(True)
             else:
                 occluded_val_list.append(False)
@@ -567,7 +559,7 @@ def calculate_v_obs(obs_traj):
 
 def seq_to_nodes(seq_):
     max_nodes = seq_.shape[1]  #number of pedestrians in the graph
-    seq_ = seq_.squeeze()
+    seq_ = seq_[0]
     seq_len = seq_.shape[2]
 
     V = np.zeros((seq_len, max_nodes, 2))
@@ -575,8 +567,9 @@ def seq_to_nodes(seq_):
         step_ = seq_[:, :, s]
         for h in range(len(step_)):
             V[s, h, :] = step_[h]
+    
 
-    return V.squeeze()
+    return V
 
 def nodes_rel_to_nodes_abs(nodes, init_node):
     nodes_ = np.zeros_like(nodes)
@@ -585,6 +578,5 @@ def nodes_rel_to_nodes_abs(nodes, init_node):
             nodes_[s, ped, :] = np.sum(nodes[:s + 1, ped, :],
                                        axis=0) + init_node[ped, :]
 
-    return nodes_.squeeze()
-
+    return nodes_
 

@@ -97,11 +97,12 @@ sh run_mcmt.sh
 
 ## Citation
 ```
-@InProceedings{yuntae_2023_CVPR,
-    author    = {Yuntae Jeon, Dai Quoc Tran, Minsoo Park and Seunghee Park},
+@InProceedings{Jeon_2023_CVPR,
+    author    = {Jeon, Yuntae and Tran, Dai Quoc and Park, Minsoo and Park, Seunghee},
     title     = {Leveraging Future Trajectory Prediction for Multi-Camera People Tracking},
     booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) Workshops},
     month     = {June},
     year      = {2023},
+    pages     = {5398-5407}
 }
 ```

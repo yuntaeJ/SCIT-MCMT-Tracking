@@ -1,5 +1,4 @@
 # Step1. Install ByteTrack.
-conda env create --file environment.yaml
 pip3 install -r requirements.txt
 python3 setup.py develop
 

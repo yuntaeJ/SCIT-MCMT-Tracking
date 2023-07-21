@@ -2,7 +2,7 @@
 
 [Track1: Multi-Camera People Tracking](https://www.aicitychallenge.org/2023-challenge-tracks/)
 
-The official resitory for [7th NVIDIA AI City Challenge](https://www.aicitychallenge.org/)
+The official repository for [7th NVIDIA AI City Challenge](https://www.aicitychallenge.org/)
 
 ## Pipeline Overview
 

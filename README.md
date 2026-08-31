@@ -4,6 +4,8 @@
 
 The official repository for [7th NVIDIA AI City Challenge](https://www.aicitychallenge.org/)
 
+Paper : https://openaccess.thecvf.com/content/CVPR2023W/AICity/html/Jeon_Leveraging_Future_Trajectory_Prediction_for_Multi-Camera_People_Tracking_CVPRW_2023_paper.html
+
 ## Pipeline Overview
 
 <p align="center"><img src="assets/overview.png"/></p>
